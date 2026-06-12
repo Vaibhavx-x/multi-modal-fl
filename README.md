@@ -59,14 +59,15 @@ tabular (B, 61)            →  TabularBranch (2-layer MLP + BN)        →  (B,
 
 Validation accuracy on the 15% server-held stratified split (5 clients, seed=42, SGD lr=0.01):
 
-| Dirichlet Alpha (α) | Val Accuracy | Data Distribution |
-|:---:|:---:|:---|
-| 0.01 | **63.52%** | Highly non-IID — each client sees mostly 1–2 classes |
-| 0.1 | **73.61%** | Moderately non-IID |
-| 1.0 | **83.87%** | Near-IID — roughly uniform class distribution per client |
+![Accuracy vs Alpha](accuracy_vs_alpha.png)
 
-> Higher α → more uniform class distribution across clients → higher accuracy.
-> Lower α simulates the realistic scenario where each hospital/clinic specialises in certain conditions.
+| Dirichlet Alpha (α) | Val Accuracy | Data Distribution |
+| :--- | :--- | :--- |
+| **0.01** | 63.52% | Highly non-IID — each client sees mostly 1–2 classes |
+| **0.10** | 73.61% | Moderately non-IID |
+| **1.00** | 83.87% | Near-IID — roughly uniform class distribution per client |
+
+*Note: Higher α → more uniform class distribution across clients → higher accuracy. Lower α simulates the realistic scenario where each hospital/clinic specialises in certain conditions.*
 
 ---
 
