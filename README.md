@@ -59,7 +59,11 @@ tabular (B, 61)            →  TabularBranch (2-layer MLP + BN)        →  (B,
 
 Validation accuracy on the 15% server-held stratified split (5 clients, seed=42, SGD lr=0.01):
 
-![Accuracy vs Alpha](accuracy_vs_alpha.png)
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="accuracy_vs_alpha_dark.png">
+  <source media="(prefers-color-scheme: light)" srcset="accuracy_vs_alpha_light.png">
+  <img alt="Accuracy vs Alpha" src="accuracy_vs_alpha_light.png">
+</picture>
 
 | Dirichlet Alpha (α) | Val Accuracy | Data Distribution |
 | :--- | :--- | :--- |
