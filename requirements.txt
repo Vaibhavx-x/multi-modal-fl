@@ -1,0 +1,19 @@
+# ── Core ML ─────────────────────────────────────────────────────────────────
+torch>=2.2.0
+torchvision>=0.17.0
+
+# ── Flower ───────────────────────────────────────────────────────────────────
+flwr[simulation]>=1.8.0      # Flower server + client + simulation engine
+flwr-datasets>=0.3.0         # DirichletPartitioner lives here
+
+# ── HuggingFace datasets (used by flwr-datasets internally) ─────────────────
+datasets>=2.18.0
+
+# ── Data / tabular ───────────────────────────────────────────────────────────
+pandas>=2.0.0
+numpy>=1.26.0
+Pillow>=10.3.0
+scikit-learn>=1.4.0          # optional: metrics helpers (confusion matrix etc.)
+
+# ── Utilities ────────────────────────────────────────────────────────────────
+filelock>=3.13.0             # cross-process GPU slot semaphore (shared volume)

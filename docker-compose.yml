@@ -1,0 +1,174 @@
+name: mmfl
+
+networks:
+  fl_network:
+    driver: bridge
+
+# Bind-mount the dataset into every container (read-only)
+x-archive-volume: &archive-volume
+  - type: bind
+    source: ./archive
+    target: /app/archive
+    read_only: true
+
+# GPU slot lock files — shared across all client containers so the
+# file-based semaphore works correctly.  Max 3 clients on GPU at once.
+x-gpu-lock-volume: &gpu-lock-volume
+  - type: bind
+    source: ./gpu_locks
+    target: /app/gpu_locks
+
+# Base config shared by all clients
+x-client-base: &client-base
+  build: .
+  networks:
+    - fl_network
+  volumes:
+    - type: bind
+      source: ./archive
+      target: /app/archive
+      read_only: true
+    - type: bind
+      source: ./gpu_locks
+      target: /app/gpu_locks
+  environment:
+    - HF_DATASETS_OFFLINE=1
+    - TRANSFORMERS_OFFLINE=1
+    - PYTHONUNBUFFERED=1
+  depends_on:
+    server:
+      condition: service_healthy
+
+# GPU reservation block — all 5 containers can see the GPU.
+# The file-based semaphore in client.py limits concurrent GPU use to 3.
+x-gpu-deploy: &gpu-deploy
+  deploy:
+    resources:
+      reservations:
+        devices:
+          - driver: nvidia
+            count: 1
+            capabilities: [gpu]
+
+# =============================================================================
+services:
+
+  server:
+    <<: [*gpu-deploy]
+    build: .
+    container_name: mmfl_server
+    # --data-root  : enables centralized evaluation on the server-held val set
+    # --val-split  : 15 % of each class → server val set (85 % → clients)
+    # --seed       : MUST match every client so the 85/15 split is identical
+    # --device     : run centralized eval on GPU if available
+    command: >
+      python server.py
+        --host 0.0.0.0
+        --port 8080
+        --rounds 300
+        --patience 30
+        --min-clients 5
+        --checkpoint /app/checkpoints/best_model.npz
+        --initial-lr 0.01
+        --lr-reduce-after 15
+        --data-root /app/archive
+        --val-split 0.15
+        --batch-size 32
+        --device cuda
+        --seed 42
+    ports:
+      - "8080:8080"
+    volumes:
+      - type: bind
+        source: ./archive
+        target: /app/archive
+        read_only: true
+      - type: bind
+        source: ./checkpoints
+        target: /app/checkpoints
+    networks:
+      - fl_network
+    environment:
+      - HF_DATASETS_OFFLINE=1
+      - TRANSFORMERS_OFFLINE=1
+      - PYTHONUNBUFFERED=1
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import socket; s=socket.socket(); s.connect(('localhost',8080)); s.close()\""]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  # All 5 clients train every round.
+  # --gpu-lock-dir : shared volume where slot lock files are created
+  # --max-gpu-slots: at most 3 clients on GPU simultaneously; others wait
+  # --seed must match the server so the 85/15 train/val split is identical
+  client_0:
+    <<: [*client-base, *gpu-deploy]
+    container_name: mmfl_client_0
+    command: >
+      python client.py
+        --client-id 0
+        --server-address server:8080
+        --archive /app/archive
+        --batch-size 64
+        --num-workers 0
+        --seed 42
+        --gpu-lock-dir /app/gpu_locks
+        --max-gpu-slots 3
+
+  client_1:
+    <<: [*client-base, *gpu-deploy]
+    container_name: mmfl_client_1
+    command: >
+      python client.py
+        --client-id 1
+        --server-address server:8080
+        --archive /app/archive
+        --batch-size 64
+        --num-workers 0
+        --seed 42
+        --gpu-lock-dir /app/gpu_locks
+        --max-gpu-slots 3
+
+  client_2:
+    <<: [*client-base, *gpu-deploy]
+    container_name: mmfl_client_2
+    command: >
+      python client.py
+        --client-id 2
+        --server-address server:8080
+        --archive /app/archive
+        --batch-size 64
+        --num-workers 0
+        --seed 42
+        --gpu-lock-dir /app/gpu_locks
+        --max-gpu-slots 3
+
+  client_3:
+    <<: [*client-base, *gpu-deploy]
+    container_name: mmfl_client_3
+    command: >
+      python client.py
+        --client-id 3
+        --server-address server:8080
+        --archive /app/archive
+        --batch-size 64
+        --num-workers 0
+        --seed 42
+        --gpu-lock-dir /app/gpu_locks
+        --max-gpu-slots 3
+
+  client_4:
+    <<: [*client-base, *gpu-deploy]
+    container_name: mmfl_client_4
+    command: >
+      python client.py
+        --client-id 4
+        --server-address server:8080
+        --archive /app/archive
+        --batch-size 64
+        --num-workers 0
+        --seed 42
+        --gpu-lock-dir /app/gpu_locks
+        --max-gpu-slots 3
