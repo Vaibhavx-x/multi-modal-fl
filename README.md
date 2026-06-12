@@ -6,6 +6,26 @@ Training is orchestrated with [Flower](https://flower.ai/) across 5 clients unde
 
 ---
 
+## Use Cases & Clinical Relevance
+
+Medical datasets are inherently siloed due to strict privacy regulations (e.g., HIPAA, GDPR) that prevent hospitals from pooling patient records. This poses a significant challenge for training robust deep learning models, which require massive, diverse datasets to generalize well.
+
+This project demonstrates a practical solution for **Dermatology and Oncology**:
+1. **Privacy-Preserving Collaboration:** Multiple clinics or hospitals can collaboratively train a shared skin lesion classifier without ever exchanging raw patient images or clinical records. Only model weight updates are transmitted to the central server.
+2. **Multi-Modal Diagnostics:** Real-world dermatologists don't just look at an image; they consider the patient's age, gender, medical history, and lesion location. This architecture mimics that clinical workflow by fusing visual features (dermoscopy) with structured tabular data (patient metadata), leading to higher accuracy than image-only models.
+3. **Handling Clinical Heterogeneity (Non-IID Data):** Different clinics see different demographic distributions and specialize in different conditions. We use Dirichlet distributions to simulate this real-world label skew and prove the model can converge effectively under extreme data heterogeneity.
+
+---
+
+## Technical Highlights
+
+- **Multi-Modal Late Fusion:** Combines a CNN backbone (ResNet-18) for image processing with an MLP for tabular feature encoding, fusing their embeddings before the final classification head.
+- **Federated Orchestration:** Built on [Flower (flwr)](https://flower.ai/), featuring a custom `EarlyStoppingFedAvg` strategy that dynamically manages the global learning rate, tracks the best-performing model, and triggers early stopping.
+- **Server-Side Evaluation:** Validates the aggregated model centrally against a held-out, stratified 15% validation split, avoiding the noise of client-side local evaluation.
+- **Containerized FL Simulation:** Uses Docker Compose and a shared file-based semaphore to orchestrate 1 server and 5 client containers on a single host, throttling concurrent GPU usage to prevent OOM errors.
+
+---
+
 ## Architecture
 
 ```
